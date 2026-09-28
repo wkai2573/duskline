@@ -1,0 +1,1353 @@
+/* ── 色彩與字體：晝夜各一組，切換 body[data-phase] 就整體換色 ── */
+
+:root {
+  --font-body: 'Noto Sans TC', 'Microsoft JhengHei', 'PingFang TC', system-ui, sans-serif;
+  --font-display: 'Noto Serif TC', 'Songti TC', 'PMingLiU', serif;
+  --font-latin: 'Cinzel', 'Noto Serif TC', serif;
+  --mana: #3b7ddd;
+  --burn: #ef7a2d;
+  --hit: #e5484d;
+  --heal: #3fb466;
+  --unit-h: 38px;
+}
+
+body[data-phase='day'] {
+  --ink: #2b1d10;
+  --ink-soft: #6d5536;
+  --paper: #fff8ea;
+  --panel: rgba(255, 249, 236, 0.7);
+  --panel-strong: rgba(255, 251, 243, 0.92);
+  --line: rgba(110, 76, 34, 0.22);
+  --accent: #c5711a;
+  --accent-ink: #fff;
+  --mine: #2a67a8;
+  --theirs: #a8323a;
+}
+
+body[data-phase='night'] {
+  --ink: #eceaf8;
+  --ink-soft: #a9a7cc;
+  --paper: #1c1e42;
+  --panel: rgba(22, 24, 54, 0.68);
+  --panel-strong: rgba(30, 32, 68, 0.94);
+  --line: rgba(185, 185, 235, 0.2);
+  --accent: #a6b8ff;
+  --accent-ink: #12153a;
+  --mine: #86b6ff;
+  --theirs: #ff8f98;
+  /* 手機回彈捲動時露出的底色 */
+  background: #0e1031;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  font-family: var(--font-body);
+  color: var(--ink);
+  background: #e7a46f;
+  transition: color 0.8s ease;
+  -webkit-font-smoothing: antialiased;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}
+
+/* ── 天空 ── */
+
+.sky {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  transition: opacity 1.2s ease;
+}
+
+.sky-day {
+  background:
+    radial-gradient(circle at 82% 8%, rgba(255, 244, 200, 0.95) 0 60px, rgba(255, 230, 160, 0.35) 61px 140px, transparent 141px),
+    radial-gradient(ellipse at 50% -20%, #fff3d2 0%, #ffd79c 38%, #f2ae78 72%, #e0966a 100%);
+}
+
+.sky-night {
+  opacity: 0;
+  background:
+    radial-gradient(circle at 18% 10%, rgba(235, 238, 255, 0.95) 0 34px, rgba(170, 180, 255, 0.12) 35px 110px, transparent 111px),
+    radial-gradient(1.5px 1.5px at 30% 22%, #fff, transparent),
+    radial-gradient(1px 1px at 62% 12%, #fff, transparent),
+    radial-gradient(1.5px 1.5px at 76% 30%, #dfe4ff, transparent),
+    radial-gradient(1px 1px at 88% 8%, #fff, transparent),
+    radial-gradient(1px 1px at 45% 40%, #cfd6ff, transparent),
+    radial-gradient(1.5px 1.5px at 8% 36%, #fff, transparent),
+    radial-gradient(ellipse at 50% -20%, #3a3f7c 0%, #1d2152 40%, #0e1031 80%, #070818 100%);
+}
+
+body[data-phase='night'] .sky-night {
+  opacity: 1;
+}
+
+/* ── 通用元件 ── */
+
+.btn {
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--panel-strong);
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: border-color 0.15s, transform 0.1s, background-color 0.8s;
+  white-space: nowrap;
+}
+
+.btn:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.btn.primary {
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-color: transparent;
+  padding: 9px 22px;
+  letter-spacing: 0.08em;
+}
+
+.btn.link {
+  background: none;
+  border: none;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  color: var(--ink-soft);
+}
+
+.btn:focus-visible,
+.card:focus-visible,
+.faction-card:focus-visible,
+.unit.ghost:focus-visible,
+.chip:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.panel-surface,
+.strip,
+.lane,
+.controls,
+.log {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  backdrop-filter: blur(6px);
+  transition: background-color 0.8s ease, border-color 0.8s ease;
+}
+
+/* ── 版面 ── */
+
+.table {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 272px;
+  grid-template-rows: auto 1fr;
+  gap: 10px 14px;
+  min-height: 100vh;
+  padding: 10px 16px 14px;
+  max-width: 1440px;
+  margin: 0 auto;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+/* ── 頂列 ── */
+
+.topbar {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.brand-zh {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 22px;
+  letter-spacing: 0.14em;
+}
+
+.brand-en {
+  font-family: var(--font-latin);
+  font-size: 11px;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  margin-left: 8px;
+  color: var(--ink-soft);
+}
+
+.round-label {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.track {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.pip {
+  position: relative;
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  font-size: 12px;
+  border: 1px solid var(--line);
+}
+
+.pip.day {
+  background: #fff1cf;
+  color: #c26d0c;
+}
+
+.pip.night {
+  background: #262a5c;
+  color: #c9d2ff;
+}
+
+.pip.past {
+  opacity: 0.35;
+}
+
+.pip.now {
+  width: 32px;
+  height: 32px;
+  font-size: 16px;
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
+.pip.locked::after {
+  content: '🔒';
+  position: absolute;
+  right: -6px;
+  bottom: -5px;
+  font-size: 10px;
+}
+
+.initiative {
+  font-size: 13px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+}
+
+.initiative.mine {
+  color: var(--mine);
+}
+
+.initiative.theirs {
+  color: var(--theirs);
+}
+
+.top-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+}
+
+/* ── 對手資訊列 ── */
+
+.strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+}
+
+.who {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+}
+
+.who small {
+  font-weight: 400;
+  color: var(--ink-soft);
+}
+
+.crest {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  font-size: 13px;
+}
+
+.crest.dawn {
+  background: #ffe8b3;
+  color: #b0600a;
+}
+
+.crest.dusk {
+  background: #2f2146;
+  color: #d9c6ff;
+}
+
+.counts {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+.backs {
+  display: flex;
+  padding-left: 6px;
+}
+
+.back {
+  width: 14px;
+  height: 20px;
+  margin-left: -5px;
+  border-radius: 3px;
+  background: linear-gradient(135deg, var(--theirs), #3a1a2c);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+}
+
+/* ── 戰場 ── */
+
+.board {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.lane {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  border-radius: 14px;
+  min-width: 0;
+}
+
+.units {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  border-radius: 10px;
+}
+
+/* 對手的單位最前方要貼近中線，所以反向排列 */
+.units.theirs {
+  flex-direction: column-reverse;
+}
+
+.units.mine.droppable {
+  cursor: pointer;
+  outline: 2px dashed var(--accent);
+  outline-offset: 3px;
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+.units.mine.droppable:hover {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+.slot {
+  height: var(--unit-h);
+  border-radius: 8px;
+  border: 1px dashed var(--line);
+}
+
+.lane-divider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-display);
+  font-size: 12px;
+  letter-spacing: 0.3em;
+  color: var(--ink-soft);
+}
+
+.lane-divider::before,
+.lane-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+
+.lane-spells {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.unit {
+  --c-bg: var(--panel-strong);
+  --c-ink: var(--ink);
+  --c-edge: var(--line);
+  position: relative;
+  height: var(--unit-h);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 8px;
+  border-radius: 8px;
+  background: var(--c-bg);
+  color: var(--c-ink);
+  border: 1px solid var(--c-edge);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+  font-size: 13px;
+  min-width: 0;
+}
+
+.u-icon {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.u-name {
+  flex: 1;
+  min-width: 0;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.u-atk b,
+.c-stats b {
+  font-weight: 600;
+  opacity: 0.4;
+  margin-left: 4px;
+  font-variant-numeric: tabular-nums;
+}
+
+.u-atk b.on,
+.c-stats b.on,
+.c-stats b.hp {
+  opacity: 1;
+}
+
+.u-atk b.on {
+  font-size: 14px;
+}
+
+.u-hp {
+  min-width: 2.4em;
+  text-align: right;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.u-hp.hurt {
+  color: var(--hit);
+}
+
+.tag {
+  font-size: 10px;
+  padding: 0 4px;
+  border-radius: 4px;
+  border: 1px solid currentColor;
+  opacity: 0.7;
+  white-space: nowrap;
+}
+
+.unit.ghost,
+.chip {
+  cursor: pointer;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border: 1.5px dashed var(--accent);
+  color: var(--ink);
+  box-shadow: none;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.order {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.x {
+  opacity: 0.6;
+  font-size: 11px;
+}
+
+.tower {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  border-radius: 10px;
+  background: var(--panel-strong);
+  border: 1px solid var(--line);
+}
+
+.t-icon {
+  font-size: 16px;
+}
+
+.t-bar {
+  flex: 1;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(128, 128, 128, 0.25);
+  overflow: hidden;
+}
+
+.t-bar i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+}
+
+.tower.mine .t-bar i {
+  background: var(--mine);
+}
+
+.tower.theirs .t-bar i {
+  background: var(--theirs);
+}
+
+.t-hp {
+  min-width: 1.4em;
+  text-align: right;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.tower.destroyed {
+  opacity: 0.55;
+  filter: grayscale(0.6);
+}
+
+/* 卡片用陣營的固定配色，不跟著晝夜變，才認得出是誰的牌 */
+.unit.dawn,
+.card.dawn,
+.faction-card.dawn {
+  --c-bg: linear-gradient(160deg, #fffaf0, #f2dfb9);
+  --c-ink: #3a2812;
+  --c-edge: #c99a4a;
+}
+
+.unit.dusk,
+.card.dusk,
+.faction-card.dusk {
+  --c-bg: linear-gradient(160deg, #3d2b52, #211733);
+  --c-ink: #f1e8ff;
+  --c-edge: #8e5bc2;
+}
+
+.caption {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  max-width: min(92%, 520px);
+  padding: 8px 18px;
+  border-radius: 999px;
+  background: var(--panel-strong);
+  border: 1px solid var(--accent);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  font-family: var(--font-display);
+  font-weight: 700;
+  text-align: center;
+  pointer-events: none;
+  animation: caption-in 0.2s ease-out;
+  z-index: 5;
+}
+
+/* ── 控制列 ── */
+
+.controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  padding: 8px 12px;
+  border-radius: 12px;
+}
+
+.mana {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+}
+
+.mana .label {
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+
+.gems {
+  display: inline-flex;
+  gap: 5px;
+  padding: 0 2px;
+}
+
+.gem {
+  width: 11px;
+  height: 11px;
+  border-radius: 2px;
+  transform: rotate(45deg);
+  background: var(--mana);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--mana) 60%, transparent);
+}
+
+.gem.burn {
+  background: var(--burn);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--burn) 60%, transparent);
+}
+
+.gem.spent {
+  background: transparent;
+  border: 1.5px solid var(--mana);
+  box-shadow: none;
+  opacity: 0.55;
+}
+
+.gem.burn.spent {
+  border-color: var(--burn);
+}
+
+.mana .num {
+  font-variant-numeric: tabular-nums;
+}
+
+.tray {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.btn.burn.armed {
+  border-color: var(--burn);
+  color: var(--burn);
+}
+
+.btn.burn.set {
+  background: var(--burn);
+  color: #fff;
+  border-color: transparent;
+}
+
+.hint {
+  flex: 1;
+  min-width: 180px;
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+
+.hint.error {
+  color: var(--hit);
+  font-weight: 700;
+}
+
+.deck-count {
+  font-size: 13px;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+.buttons {
+  display: flex;
+  gap: 8px;
+}
+
+/* ── 手牌 ── */
+
+.hand {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  align-items: flex-end;
+  min-height: 186px;
+  padding: 16px 4px 6px;
+  overflow-x: auto;
+}
+
+.empty-hand {
+  align-self: center;
+  color: var(--ink-soft);
+  font-size: 13px;
+}
+
+.card {
+  flex: none;
+  position: relative;
+  width: 116px;
+  height: 164px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 18px 8px 8px;
+  border-radius: 12px;
+  background: var(--c-bg);
+  color: var(--c-ink);
+  border: 1.5px solid var(--c-edge);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  text-align: center;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.card:hover:not(:disabled) {
+  transform: translateY(-6px);
+}
+
+.card.selected {
+  transform: translateY(-14px);
+  box-shadow: 0 0 0 3px var(--accent), 0 12px 24px rgba(0, 0, 0, 0.28);
+}
+
+.card.unaffordable {
+  filter: grayscale(0.75);
+  opacity: 0.6;
+}
+
+.card:disabled {
+  cursor: default;
+}
+
+.c-cost {
+  position: absolute;
+  left: 6px;
+  top: 6px;
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--mana);
+  color: #fff;
+  font-weight: 800;
+  font-size: 13px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+/* 焚卷一張牌才出得起：費用圈帶一點火焰色 */
+.card.needs-burn .c-cost {
+  background: linear-gradient(135deg, var(--mana) 40%, var(--burn));
+}
+
+.c-burn {
+  position: absolute;
+  right: 6px;
+  top: 6px;
+  font-size: 13px;
+}
+
+.c-icon {
+  font-size: 30px;
+  line-height: 1.15;
+}
+
+.c-name {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 14px;
+  line-height: 1.2;
+}
+
+.c-stats {
+  font-size: 12px;
+}
+
+.c-stats.spell {
+  font-size: 10px;
+  letter-spacing: 0.3em;
+  opacity: 0.7;
+}
+
+.c-text {
+  font-size: 10.5px;
+  line-height: 1.4;
+  opacity: 0.85;
+  overflow: hidden;
+}
+
+/* ── 戰況 ── */
+
+.log {
+  grid-column: 2;
+  grid-row: 2;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-height: calc(100vh - 70px);
+  position: sticky;
+  top: 10px;
+  padding: 10px 12px;
+  border-radius: 14px;
+}
+
+.log h2 {
+  margin: 0 0 6px;
+  font-family: var(--font-display);
+  font-size: 15px;
+  letter-spacing: 0.3em;
+}
+
+.log-list {
+  flex: 1;
+  margin: 0;
+  padding: 0 2px 0 0;
+  list-style: none;
+  overflow-y: auto;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+
+.log-list li.round {
+  margin-top: 8px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: var(--panel-strong);
+  font-weight: 700;
+}
+
+.log-list li.mine {
+  color: var(--mine);
+}
+
+.log-list li.theirs {
+  color: var(--theirs);
+}
+
+.log-list li.big {
+  font-weight: 800;
+}
+
+.log-list li.combat {
+  color: var(--ink-soft);
+  letter-spacing: 0.2em;
+  text-align: center;
+}
+
+/* ── 開始畫面 ── */
+
+.start {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 32px 16px;
+  text-align: center;
+}
+
+.start-inner {
+  max-width: 680px;
+}
+
+.eyebrow {
+  margin: 0 0 10px;
+  font-size: 13px;
+  letter-spacing: 0.3em;
+  color: var(--ink-soft);
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(44px, 9vw, 76px);
+  letter-spacing: 0.16em;
+  line-height: 1.1;
+}
+
+.title span {
+  display: block;
+  margin-top: 6px;
+  font-family: var(--font-latin);
+  font-size: 0.26em;
+  letter-spacing: 0.6em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.lede {
+  max-width: 34em;
+  margin: 18px auto 0;
+  line-height: 1.8;
+}
+
+.factions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+  margin: 28px 0 14px;
+}
+
+.faction-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 20px 22px;
+  border-radius: 16px;
+  background: var(--c-bg);
+  color: var(--c-ink);
+  border: 1.5px solid var(--c-edge);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.faction-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.28);
+}
+
+.faction-card .crest {
+  width: 40px;
+  height: 40px;
+  font-size: 22px;
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.f-name {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.f-blurb {
+  font-size: 14px;
+  opacity: 0.85;
+}
+
+.f-icons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 4px;
+  font-size: 16px;
+  margin-top: 4px;
+}
+
+.f-cta {
+  margin-top: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  opacity: 0.8;
+}
+
+/* ── 結果與規則 ── */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(10, 8, 22, 0.45);
+  backdrop-filter: blur(3px);
+  animation: fade 0.3s ease;
+}
+
+.result {
+  width: min(100%, 400px);
+  padding: 28px 30px;
+  border-radius: 18px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+  text-align: center;
+  animation: pop 0.35s ease-out;
+}
+
+.result-icon {
+  font-size: 44px;
+}
+
+.result h2 {
+  margin: 6px 0;
+  font-family: var(--font-display);
+  font-size: 32px;
+  letter-spacing: 0.3em;
+}
+
+.result p {
+  color: var(--ink-soft);
+  line-height: 1.7;
+}
+
+.result .row {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+dialog.rules {
+  width: min(100% - 32px, 580px);
+  max-height: calc(100vh - 48px);
+  padding: 24px 28px;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  color: var(--ink);
+  line-height: 1.7;
+  font-size: 14.5px;
+}
+
+dialog.rules::backdrop {
+  background: rgba(10, 8, 22, 0.5);
+  backdrop-filter: blur(2px);
+}
+
+/* 標題只是讓規則視窗打開時停在最上方，不需要焦點外框 */
+.rules h2:focus {
+  outline: none;
+}
+
+.rules h2 {
+  margin: 0 0 8px;
+  font-family: var(--font-display);
+  letter-spacing: 0.2em;
+}
+
+.rules h3 {
+  margin: 18px 0 4px;
+  font-family: var(--font-display);
+  font-size: 16px;
+}
+
+.rules ol {
+  margin: 0;
+  padding-left: 1.4em;
+}
+
+.rules p {
+  margin: 0;
+}
+
+.rules .goal {
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+.rules dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 2px 12px;
+  margin: 0;
+}
+
+.rules dt {
+  font-weight: 700;
+}
+
+.rules dd {
+  margin: 0;
+}
+
+.rules .keys {
+  margin: 18px 0 14px;
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+
+kbd {
+  padding: 1px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--line);
+  background: var(--panel-strong);
+  font-family: inherit;
+  font-size: 12px;
+}
+
+/* ── 動畫 ── */
+
+.fx-reveal {
+  animation: reveal 0.45s ease-out;
+}
+
+.fx-hit {
+  animation: shake 0.35s ease;
+  box-shadow: 0 0 0 2px var(--hit);
+}
+
+.fx-heal {
+  box-shadow: 0 0 0 2px var(--heal);
+}
+
+.fx-destroyed {
+  animation: shake 0.5s ease, flare 0.9s ease;
+}
+
+.board.fx-combat .lane {
+  animation: clash 0.6s ease;
+}
+
+.float {
+  position: absolute;
+  right: 8px;
+  top: -12px;
+  font-size: 17px;
+  font-weight: 900;
+  pointer-events: none;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
+  animation: float-up 0.9s ease-out forwards;
+}
+
+.float.dmg {
+  color: #ff5b62;
+}
+
+.float.heal {
+  color: #59d67e;
+}
+
+@keyframes reveal {
+  from {
+    transform: perspective(400px) rotateX(80deg) scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+@keyframes shake {
+  0%,
+  100% {
+    transform: none;
+  }
+  20% {
+    transform: translateX(-4px);
+  }
+  45% {
+    transform: translateX(4px);
+  }
+  70% {
+    transform: translateX(-2px);
+  }
+}
+
+@keyframes flare {
+  30% {
+    box-shadow: 0 0 0 4px var(--hit), 0 0 24px var(--hit);
+  }
+}
+
+@keyframes clash {
+  30% {
+    box-shadow: inset 0 0 0 2px var(--accent), 0 0 18px color-mix(in srgb, var(--accent) 50%, transparent);
+  }
+}
+
+@keyframes float-up {
+  from {
+    transform: translateY(6px);
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  to {
+    transform: translateY(-16px);
+    opacity: 0;
+  }
+}
+
+@keyframes pulse {
+  50% {
+    outline-color: transparent;
+  }
+}
+
+@keyframes caption-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -40%);
+  }
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes pop {
+  from {
+    transform: scale(0.92);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* ── 窄螢幕 ── */
+
+@media (max-width: 980px) {
+  .table {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .log {
+    grid-column: 1;
+    grid-row: auto;
+    position: static;
+    max-height: 220px;
+  }
+}
+
+@media (max-width: 720px) {
+  :root {
+    --unit-h: 34px;
+  }
+
+  .table {
+    padding: 8px 10px 12px;
+  }
+
+  /* 標題在開始畫面看過了，手機上把頂列讓給回合資訊 */
+  .brand,
+  .u-name,
+  .tag {
+    display: none;
+  }
+
+  .topbar {
+    gap: 8px 10px;
+  }
+
+  .track {
+    gap: 3px;
+  }
+
+  .pip {
+    width: 20px;
+    height: 20px;
+    font-size: 10px;
+  }
+
+  .pip.now {
+    width: 26px;
+    height: 26px;
+    font-size: 13px;
+  }
+
+  .initiative {
+    font-size: 12px;
+    padding: 3px 8px;
+  }
+
+  .top-actions .btn {
+    padding: 6px 10px;
+    font-size: 13px;
+  }
+
+  .board {
+    gap: 6px;
+  }
+
+  .lane {
+    padding: 6px 5px;
+  }
+
+  .unit {
+    gap: 3px;
+    padding: 0 5px;
+    font-size: 12px;
+    justify-content: space-between;
+  }
+
+  .u-atk b {
+    margin-left: 2px;
+  }
+
+  .unit.ghost .x {
+    display: none;
+  }
+
+  .t-icon {
+    display: none;
+  }
+
+  .hand {
+    justify-content: flex-start;
+    min-height: 168px;
+  }
+
+  .card {
+    width: 100px;
+    height: 148px;
+    padding-top: 16px;
+  }
+
+  .c-icon {
+    font-size: 24px;
+  }
+
+  .c-text {
+    font-size: 9.5px;
+  }
+}
+
+@media (max-width: 480px) {
+  /* 手機上一路只有一百多像素寬，只留當下晝夜的攻擊力 */
+  .u-atk b:not(.on) {
+    display: none;
+  }
+}

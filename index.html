@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="晨昏戰線：晝夜交替、三路同時佈署的奇幻卡牌對戰" />
+    <title>晨昏戰線 Duskline</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌗</text></svg>" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Noto+Serif+TC:wght@600;700&display=swap"
+    />
+  </head>
+  <body data-phase="day">
+    <!-- 兩層天空疊在一起，切換晝夜時用透明度漸變 -->
+    <div class="sky sky-day" aria-hidden="true"></div>
+    <div class="sky sky-night" aria-hidden="true"></div>
+
+    <div id="app"></div>
+
+    <dialog id="rules" class="rules">
+      <form method="dialog">
+        <h2 tabindex="-1" autofocus>怎麼玩</h2>
+        <p class="goal">摧毀對手 <b>2 座塔</b>就獲勝。打滿 8 回合還沒分出勝負時，塔的總生命高的一方獲勝。</p>
+
+        <h3>每回合</h3>
+        <ol>
+          <li><b>開始</b>：雙方各抽 1 張牌。第 N 回合有 N 點魔力。</li>
+          <li><b>佈署</b>：點手牌，再點你要放的戰線。雙方同時出牌，看不到對方出了什麼。</li>
+          <li><b>揭曉</b>：先揭曉的一方（頂列會標示）先翻牌，另一方再翻，依序發動「揭曉：」效果。</li>
+          <li><b>交戰</b>：三路同時交戰。一路上所有單位的攻擊力加總，先打對方最前面的單位，溢出的傷害打塔。</li>
+        </ol>
+
+        <h3>晝夜</h3>
+        <p>
+          晝夜每回合交替，第 1 回合的晝夜由擲硬幣決定，頂列的進度條會顯示接下來每回合的晝夜。
+          每個單位有 ☀ 白晝和 ☾ 黑夜兩個攻擊力，交戰時用當下的那一個。
+          有些法術可以改變晝夜，而<b>後揭曉的會蓋掉先揭曉的</b>。
+        </p>
+
+        <h3>焚卷</h3>
+        <p>每回合可以把一張手牌移出遊戲，換這回合 +1 魔力。選一張手牌後按「🔥 焚卷」。</p>
+
+        <h3>關鍵字</h3>
+        <dl>
+          <dt>守護 N</dt><dd>此路我方塔受到的傷害 −N。</dd>
+          <dt>突襲</dt><dd>攻擊不打單位，直接打塔。</dd>
+          <dt>吸血</dt><dd>交戰結束時若仍存活，回復等同目前攻擊力的生命。</dd>
+          <dt>揭曉</dt><dd>這張牌翻開時發動。</dd>
+          <dt>亡語</dt><dd>這個單位陣亡時發動。</dd>
+        </dl>
+
+        <p class="keys">快捷鍵：<kbd>Enter</kbd> 揭曉、<kbd>空白鍵</kbd> 快轉、<kbd>Esc</kbd> 取消選取</p>
+        <button class="btn primary" value="close">開始吧</button>
+      </form>
+    </dialog>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

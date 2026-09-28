@@ -1,0 +1,20 @@
+{
+  "name": "duskline",
+  "private": true,
+  "version": "0.1.0",
+  "description": "晨昏戰線 Duskline：晝夜交替、三路同時佈署的奇幻卡牌對戰",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "sim": "node scripts/sim.ts"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.3",
+    "typescript": "7.0.2",
+    "vite": "8.3.1",
+    "vitest": "5.0.2"
+  }
+}
