@@ -3,6 +3,8 @@
 一局 10～15 分鐘的網頁卡牌對戰。白晝與黑夜每回合交替，每張卡都有白天和夜晚兩種攻擊力。
 雙方同時把牌蓋在三條戰線上，揭曉後自動交戰，先摧毀對手兩座塔的一方獲勝。
 
+**線上試玩：<https://wkai2573.github.io/duskline/>**
+
 完整規則見 [docs/RULES.md](docs/RULES.md)。
 
 ## 執行
@@ -16,6 +18,8 @@ npm test         # 單元測試 + AI 對 AI 模擬
 npm run sim      # 平衡報告，預設 1000 局：npm run sim -- 3000
 npm run build    # 輸出到 dist/，可以直接放上任何靜態網站
 ```
+
+推送到 `main` 時，GitHub Actions 會自動跑測試、建置，並部署到 GitHub Pages（見 [.github/workflows/deploy.yml](.github/workflows/deploy.yml)）。
 
 ## 專案結構
 
