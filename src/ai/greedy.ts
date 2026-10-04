@@ -1,5 +1,6 @@
 import {
   LANES,
+  RULES,
   attackOf,
   getDef,
   manaFor,
@@ -128,10 +129,23 @@ function pendingValue(s: GameState, seat: Seat): number {
       v += W.pendingSpell;
     } else {
       const hp = p.hp ?? def.hp ?? 0;
-      v += W.unit * W.pending * (hp + (attackOf(def, 'day') + attackOf(def, 'night')) / 2);
+      v += W.unit * W.pending * (hp + (attackOf(def, 'day') + attackOf(def, 'night')) / 2) * laneWeight(s, seat, p.lane);
     }
   }
   return v;
+}
+
+/**
+ * 預約的單位要先決定去哪一路。對手的塔已經倒了，去那一路就打不到塔，價值打折；
+ * 其他情況下，偏好對手塔血量較低（接近拆掉）或是我方塔血量較低（需要防守）的一路。
+ */
+function laneWeight(s: GameState, seat: Seat, lane: Lane | undefined): number {
+  if (lane === undefined) return 1;
+  const opp: Seat = seat === 0 ? 1 : 0;
+  const theirTower = s.sides[opp].towers[lane];
+  const myTower = s.sides[seat].towers[lane];
+  if (theirTower <= 0) return 0.5;
+  return 1 + 0.03 * (RULES.towerHp - theirTower) + 0.02 * (RULES.towerHp - Math.max(0, myTower));
 }
 
 function boardValue(s: GameState, seat: Seat, lane: Lane): number {

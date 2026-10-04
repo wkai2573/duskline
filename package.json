@@ -10,6 +10,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "sim": "node scripts/sim.ts",
+    "card-power": "node scripts/card-power.ts",
     "check:layout": "node scripts/check-layout.ts"
   },
   "devDependencies": {

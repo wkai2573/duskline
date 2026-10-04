@@ -4,7 +4,10 @@ import { RULES, type CardDef, type Faction, type Phase } from './types.ts';
  * 卡表。新增卡片只要在這裡加一筆資料；
  * 只有用到新的效果類型時，才需要在 effects.ts 加處理函式。
  *
- * 數值基準：N 費單位的「平均攻擊（☀☾ 取平均）+ 生命」大約是 2N+1，能力另外折算。
+ * 數值基準：看卡面上最強的那一面，「最高攻擊力 + 生命」大約是 1 費 3～4、2 費 5～6、
+ * 3 費 4～6（有能力的偏低）、4 費 9、5 費 12。晨曦和暮影有天色法術可以強迫天色，所以單位大多能以強的那一面出手；
+ * 星軌的單位攻擊力不隨晝夜改變，用同一個基準比較。預約的單位比同數值的單位便宜 1 費（晚一回合才進場）。
+ * tests/cards.test.ts 會檢查同費用的單位數值相差不超過 3。
  */
 const DEFS: CardDef[] = [
   // ── 晨曦騎士團：白天強勢，擅長守護和修復塔 ──
@@ -137,7 +140,7 @@ const DEFS: CardDef[] = [
   },
   {
     id: 'bellguard', name: '鐘樓守衛', faction: 'orbit', type: 'unit', cost: 2,
-    dayAtk: 3, nightAtk: 3, hp: 4, icon: '🔔', text: '',
+    dayAtk: 3, nightAtk: 3, hp: 3, icon: '🔔', text: '',
   },
   {
     id: 'comet', name: '彗星使者', faction: 'orbit', type: 'unit', cost: 3,
@@ -154,8 +157,8 @@ const DEFS: CardDef[] = [
     text: '揭曉（先揭曉）：對此路最前方的敵人造成 2 點傷害。揭曉（後揭曉）：抽 1 張牌。',
   },
   {
-    id: 'colossus', name: '星軌巨像', faction: 'orbit', type: 'unit', cost: 3,
-    dayAtk: 5, nightAtk: 5, hp: 5, delayed: true, icon: '🗿',
+    id: 'colossus', name: '星軌巨像', faction: 'orbit', type: 'unit', cost: 2,
+    dayAtk: 3, nightAtk: 3, hp: 4, delayed: true, icon: '🗿',
     text: '預約：下回合揭曉階段開始時才進場。',
   },
   {
@@ -178,7 +181,7 @@ const DEFS: CardDef[] = [
     text: '全場：下回合你後揭曉，抽 1 張牌。',
   },
   {
-    id: 'preview', name: '星圖預演', faction: 'orbit', type: 'spell', cost: 1, target: 'global', delayed: true, icon: '🗺️',
+    id: 'preview', name: '星圖預演', faction: 'orbit', type: 'spell', cost: 2, target: 'global', delayed: true, icon: '🗺️',
     effects: [{ on: 'reveal', do: 'damageFronts', amount: 2 }],
     text: '預約・全場：下回合揭曉階段開始時，對每一路敵方最前方的單位造成 2 點傷害。',
   },
