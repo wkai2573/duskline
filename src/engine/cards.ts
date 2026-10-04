@@ -126,7 +126,7 @@ const DEFS: CardDef[] = [
   // ── 星軌學會：不受晝夜影響，強在出牌的時機 ──
   {
     id: 'apprentice', name: '觀星學徒', faction: 'orbit', type: 'unit', cost: 1,
-    dayAtk: 1, nightAtk: 1, hp: 1, icon: '🔭',
+    dayAtk: 2, nightAtk: 2, hp: 1, icon: '🔭',
     effects: [{ on: 'reveal', order: 'second', do: 'draw', amount: 1 }],
     text: '揭曉（後揭曉）：抽 1 張牌。',
   },
@@ -137,7 +137,7 @@ const DEFS: CardDef[] = [
   },
   {
     id: 'bellguard', name: '鐘樓守衛', faction: 'orbit', type: 'unit', cost: 2,
-    dayAtk: 2, nightAtk: 2, hp: 4, icon: '🔔', text: '',
+    dayAtk: 3, nightAtk: 3, hp: 4, icon: '🔔', text: '',
   },
   {
     id: 'comet', name: '彗星使者', faction: 'orbit', type: 'unit', cost: 3,
@@ -146,7 +146,7 @@ const DEFS: CardDef[] = [
   },
   {
     id: 'observer', name: '星軌觀測者', faction: 'orbit', type: 'unit', cost: 3,
-    dayAtk: 2, nightAtk: 2, hp: 2, icon: '🪐',
+    dayAtk: 3, nightAtk: 3, hp: 2, icon: '🪐',
     effects: [
       { on: 'reveal', order: 'first', do: 'damageFront', amount: 2 },
       { on: 'reveal', order: 'second', do: 'draw', amount: 1 },
@@ -155,12 +155,12 @@ const DEFS: CardDef[] = [
   },
   {
     id: 'colossus', name: '星軌巨像', faction: 'orbit', type: 'unit', cost: 3,
-    dayAtk: 4, nightAtk: 4, hp: 5, delayed: true, icon: '🗿',
+    dayAtk: 5, nightAtk: 5, hp: 5, delayed: true, icon: '🗿',
     text: '預約：下回合揭曉階段開始時才進場。',
   },
   {
     id: 'archon', name: '星軌執政官', faction: 'orbit', type: 'unit', cost: 5,
-    dayAtk: 4, nightAtk: 4, hp: 6, icon: '👁️',
+    dayAtk: 5, nightAtk: 5, hp: 6, icon: '👁️',
     effects: [{ on: 'reveal', order: 'second', do: 'damageLane', amount: 1 }],
     text: '揭曉（後揭曉）：對此路所有敵方單位造成 1 點傷害。',
   },
@@ -171,8 +171,11 @@ const DEFS: CardDef[] = [
   },
   {
     id: 'reverse', name: '逆轉星軌', faction: 'orbit', type: 'spell', cost: 2, target: 'global', icon: '🌀',
-    effects: [{ on: 'reveal', do: 'claimSecond' }],
-    text: '全場：下回合你後揭曉。',
+    effects: [
+      { on: 'reveal', do: 'claimSecond' },
+      { on: 'reveal', do: 'draw', amount: 1 },
+    ],
+    text: '全場：下回合你後揭曉，抽 1 張牌。',
   },
   {
     id: 'preview', name: '星圖預演', faction: 'orbit', type: 'spell', cost: 1, target: 'global', delayed: true, icon: '🗺️',

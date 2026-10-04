@@ -4,9 +4,14 @@ import { playMatch, runSeries } from '../src/ai/selfplay.ts';
 import { PRESET_DECKS, RULES, newGame, resolveRound, validatePlan } from '../src/engine/index.ts';
 
 describe('AI 對 AI 模擬', () => {
-  it('AI 出的佈署永遠合法，而且對局會在回合上限內結束', () => {
+  it.each([
+    ['dawn', 'dusk'],
+    ['dawn', 'orbit'],
+    ['dusk', 'orbit'],
+    ['orbit', 'orbit'],
+  ] as const)('AI 出的佈署永遠合法，而且對局會在回合上限內結束（%s vs %s）', (a, b) => {
     for (let seed = 1; seed <= 30; seed++) {
-      let s = newGame({ seed, decks: [PRESET_DECKS.dawn, PRESET_DECKS.dusk] });
+      let s = newGame({ seed, decks: [PRESET_DECKS[a], PRESET_DECKS[b]] });
       while (s.winner === null) {
         const plans = [choosePlan(s, 0), choosePlan(s, 1)] as const;
         expect(validatePlan(s, 0, plans[0])).toBeNull();
@@ -38,5 +43,13 @@ describe('AI 對 AI 模擬', () => {
     expect(r.avgRounds).toBeLessThanOrEqual(RULES.maxRounds);
     expect(r.wins.dawn / decided).toBeGreaterThan(0.4);
     expect(r.wins.dawn / decided).toBeLessThan(0.6);
+  });
+
+  it.each([['dawn'], ['dusk']] as const)('星軌學會對%s的勝率在 40%%～60%% 之間', (opponent) => {
+    const r = runSeries(300, 1, ['orbit', opponent]);
+    const decided = r.games - r.draws;
+    console.log(`模擬 ${r.games} 局：星軌 ${r.wins.orbit} 勝、${opponent} ${r.wins[opponent]} 勝、平手 ${r.draws}`);
+    expect(r.wins.orbit / decided).toBeGreaterThan(0.4);
+    expect(r.wins.orbit / decided).toBeLessThan(0.6);
   });
 });

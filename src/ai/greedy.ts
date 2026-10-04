@@ -22,6 +22,12 @@ const W = {
   destroyedTower: 10,
   unit: 0.6,
   hand: 0.8,
+  /** 預約中的單位，相對於已經在場上的價值（晚一回合才會出手） */
+  pending: 0.85,
+  /** 預約中的法術大約值多少分 */
+  pendingSpell: 3,
+  /** 下回合可以後揭曉 */
+  secondNext: 1,
   win: 10_000,
 };
 
@@ -107,6 +113,24 @@ export function score(s: GameState, seat: Seat): number {
     v += W.unit * (boardValue(s, seat, lane) - boardValue(s, opp, lane));
   }
   v += W.hand * s.sides[seat].hand.length;
+  v += pendingValue(s, seat) - pendingValue(s, opp);
+  // 預約、流放的單位這回合不在場上，下回合才回來；後揭曉的優勢也要算進去
+  const nextFirst = s.nextInitiative ?? (seat === s.initiative ? opp : seat);
+  if (nextFirst !== seat) v += W.secondNext;
+  return v;
+}
+
+function pendingValue(s: GameState, seat: Seat): number {
+  let v = 0;
+  for (const p of s.sides[seat].pending) {
+    const def = getDef(p.card.defId);
+    if (def.type === 'spell') {
+      v += W.pendingSpell;
+    } else {
+      const hp = p.hp ?? def.hp ?? 0;
+      v += W.unit * W.pending * (hp + (attackOf(def, 'day') + attackOf(def, 'night')) / 2);
+    }
+  }
   return v;
 }
 
