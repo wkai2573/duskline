@@ -3,6 +3,7 @@ import {
   PRESET_DECKS,
   newGame,
   resolveRound,
+  rivalOf,
   validatePlan,
   type GameEvent,
   type Lane,
@@ -114,8 +115,8 @@ export function createApp(root: HTMLElement, rulesDialog: HTMLDialogElement): vo
   }
 
   function startVsAi(faction: PlayableFaction): void {
-    const rival: PlayableFaction = faction === 'dawn' ? 'dusk' : 'dawn';
-    beginGame(Math.floor(Math.random() * 2 ** 31), [faction, rival], 0, 'ai');
+    const seed = Math.floor(Math.random() * 2 ** 31);
+    beginGame(seed, [faction, rivalOf(faction, seed)], 0, 'ai');
   }
 
   // ── 連線 ──
@@ -308,7 +309,8 @@ export function createApp(root: HTMLElement, rulesDialog: HTMLDialogElement): vo
   }
 
   function rematch(): void {
-    if (vm.mode === 'ai') return startVsAi(vm.factions[vm.me]);
+    // 再戰一局：同樣的陣營對上同樣的對手
+    if (vm.mode === 'ai') return beginGame(Math.floor(Math.random() * 2 ** 31), vm.factions, 0, 'ai');
     const before = vm.online;
     if (!before || !match) return;
     match.requestRematch();

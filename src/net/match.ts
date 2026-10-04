@@ -1,4 +1,4 @@
-import type { GameState, Plan, PlayableFaction, Seat } from '../engine/index.ts';
+import { rivalOf, type GameState, type Plan, type PlayableFaction, type Seat } from '../engine/index.ts';
 import { PROTOCOL_VERSION, commitText, parsePlan, randomHex, sha256, type Channel } from './protocol.ts';
 
 export interface GameInfo {
@@ -61,6 +61,7 @@ export function createMatch(
   let rematchMine = false;
   let rematchTheirs = false;
   let finished = false;
+  let rival: PlayableFaction | undefined;
 
   function reset(): void {
     theirCommits = new Map();
@@ -87,11 +88,10 @@ export function createMatch(
 
   function startGame(): void {
     reset();
-    const game: GameInfo = {
-      seed: randomSeed(),
-      factions: [hostFaction, hostFaction === 'dawn' ? 'dusk' : 'dawn'],
-      mySeat,
-    };
+    const seed = randomSeed();
+    // 第一局由種子決定對手的陣營；再戰一局時沿用，免得換了對手
+    rival ??= rivalOf(hostFaction, seed);
+    const game: GameInfo = { seed, factions: [hostFaction, rival], mySeat };
     channel.send({ t: 'start', seed: game.seed, factions: game.factions });
     events.start(game);
   }

@@ -57,8 +57,9 @@ describe('連線對戰協定', () => {
   it('房主決定種子和陣營，加入者拿另一個陣營、坐 1 號位', async () => {
     const [host, guest] = pair();
     const [h, g] = await Promise.all([host.started, guest.started]);
-    expect(h).toEqual({ seed: 20260929, factions: ['dusk', 'dawn'], mySeat: 0 });
-    expect(g).toEqual({ seed: 20260929, factions: ['dusk', 'dawn'], mySeat: 1 });
+    // 房主扮演暮影；對手陣營由種子決定（20260929 是奇數 → 其餘陣營的第二個）
+    expect(h).toEqual({ seed: 20260929, factions: ['dusk', 'orbit'], mySeat: 0 });
+    expect(g).toEqual({ seed: 20260929, factions: ['dusk', 'orbit'], mySeat: 1 });
   });
 
   it('雙方各自結算，整局打完盤面完全相同', async () => {

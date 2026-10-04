@@ -333,6 +333,11 @@ body[data-phase='night'] .sky-night {
   color: #d9c6ff;
 }
 
+.crest.orbit {
+  background: #d7e6f7;
+  color: #1d3f6e;
+}
+
 .counts {
   display: flex;
   align-items: center;
@@ -615,6 +620,51 @@ body[data-phase='night'] .sky-night {
   --c-bg: linear-gradient(160deg, #3d2b52, #211733);
   --c-ink: #f1e8ff;
   --c-edge: #8e5bc2;
+}
+
+.unit.orbit,
+.card.orbit,
+.faction-card.orbit {
+  --c-bg: linear-gradient(160deg, #eaf2fb, #b9cde6);
+  --c-ink: #14263f;
+  --c-edge: #5d86b8;
+}
+
+/* 預約中、流放中的單位：半透明，擺在它們回來時會站的空位上 */
+.unit.pending {
+  opacity: 0.6;
+  border-style: dashed;
+  box-shadow: none;
+  cursor: help;
+}
+
+.pending-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 10px;
+  border: 1px dashed var(--accent);
+  font-size: 12px;
+  line-height: 1.3;
+  cursor: help;
+}
+
+.pending-badge small {
+  font-size: 11px;
+  color: var(--ink-soft);
+}
+
+.c-delay {
+  position: absolute;
+  left: 34px;
+  top: 8px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--c-ink) 14%, transparent);
+  font-size: 10px;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 .caption {
@@ -932,7 +982,7 @@ body[data-phase='night'] .sky-night {
 }
 
 .start-inner {
-  max-width: 680px;
+  max-width: 820px;
 }
 
 .eyebrow {
@@ -968,7 +1018,7 @@ body[data-phase='night'] .sky-night {
 
 .factions {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 16px;
   margin: 28px 0 14px;
 }

@@ -2,6 +2,7 @@ import {
   FACTIONS,
   LANES,
   LANE_NAMES,
+  PLAYABLE_FACTIONS,
   RULES,
   attackOf,
   cardsOf,
@@ -14,6 +15,7 @@ import {
   type GameEvent,
   type GameState,
   type Lane,
+  type Pending,
   type Phase,
   type PlayableFaction,
   type Seat,
@@ -86,8 +88,7 @@ export function render(vm: ViewModel): string {
 // ── 開始畫面與連線大廳 ──
 
 function startScreen(vm: ViewModel): string {
-  const factions = (['dawn', 'dusk'] as const)
-    .map((f) => {
+  const factions = PLAYABLE_FACTIONS.map((f) => {
       const info = FACTIONS[f];
       const icons = cardsOf(f)
         .filter((d) => d.type === 'unit')
@@ -101,8 +102,7 @@ function startScreen(vm: ViewModel): string {
           <span class="f-icons">${icons}</span>
           <span class="f-cta">扮演這個陣營，對戰電腦 →</span>
         </button>`;
-    })
-    .join('');
+  }).join('');
   const msg = vm.message ? `<p class="online-msg ${vm.message.error ? 'error' : ''}" role="status">${vm.message.text}</p>` : '';
   return `
     <div class="start">
@@ -117,8 +117,7 @@ function startScreen(vm: ViewModel): string {
           <div class="online-actions">
             <div class="online-host">
               <span>建立房間，我扮演</span>
-              <button class="btn" data-action="host" data-faction="dawn">☀ ${FACTIONS.dawn.name}</button>
-              <button class="btn" data-action="host" data-faction="dusk">☾ ${FACTIONS.dusk.name}</button>
+              ${PLAYABLE_FACTIONS.map((f) => `<button class="btn" data-action="host" data-faction="${f}">${FACTIONS[f].icon} ${FACTIONS[f].name}</button>`).join('')}
             </div>
             <form class="online-join" data-form="join">
               <input name="code" placeholder="房間代碼" maxlength="8" autocomplete="off"
@@ -194,12 +193,33 @@ function topbar(vm: ViewModel, s: GameState): string {
         <b>${first ? '你先揭曉' : '對手先揭曉'}</b>
         <small>${first ? '天色可能被蓋過' : '你可以蓋過天色'}</small>
       </div>
+      ${pendingSpells(vm, s)}
       ${online ? '<div class="net-badge" title="和朋友連線對戰中">🌐 連線對戰</div>' : ''}
       <div class="top-actions">
         <button class="btn" data-action="rules">規則</button>
         ${online ? '<button class="btn" data-action="leave">離開</button>' : '<button class="btn" data-action="restart">新對局</button>'}
       </div>
     </header>`;
+}
+
+/** 預約中的法術不屬於任何一路的單位列，改在頂列提醒；對手預約的是什麼牌要等發動才知道 */
+function pendingSpells(vm: ViewModel, s: GameState): string {
+  const mine = s.sides[vm.me].pending.filter((p) => getDef(p.card.defId).type === 'spell');
+  const theirs = s.sides[other(vm.me)].pending.filter((p) => getDef(p.card.defId).type === 'spell');
+  if (mine.length === 0 && theirs.length === 0) return '';
+  const names = mine.map((p) => `「${getDef(p.card.defId).name}」`).join('');
+  const title = [
+    mine.length ? `你預約了${names}` : '',
+    theirs.length ? `對手預約了 ${theirs.length} 張法術` : '',
+    '下回合揭曉階段開始時發動',
+  ]
+    .filter(Boolean)
+    .join('；');
+  return `
+    <div class="pending-badge" title="${title}">
+      <b>⏳ 預約中</b>
+      <small>你 ${mine.length} · 對手 ${theirs.length}</small>
+    </div>`;
 }
 
 function opponentStrip(vm: ViewModel, s: GameState): string {
@@ -240,20 +260,24 @@ function laneColumn(vm: ViewModel, s: GameState, lane: Lane): string {
   const ghosts = vm.draft.plays
     .map((play, i) => ({ play, i, def: defOfHand(s, vm.me, play.uid) }))
     .filter(({ play }) => play.lane === lane);
-  const unitGhosts = ghosts.filter(({ def }) => def.type === 'unit');
-  const spellGhosts = ghosts.filter(({ def }) => def.type === 'spell');
+  // 預約的單位現在不佔位置，所以和法術一樣用晶片顯示
+  const unitGhosts = ghosts.filter(({ def }) => def.type === 'unit' && !def.delayed);
+  const spellGhosts = ghosts.filter(({ def }) => def.type === 'spell' || def.delayed);
 
   const droppable = vm.selected !== null && !vm.busy && !vm.waiting ? 'droppable' : '';
   const free = RULES.laneCapacity - mine.length - unitGhosts.length;
   const locked = vm.waiting;
   const note = laneNote(vm, s, lane);
+  const theirComing = pendingTiles(vm, opp, lane, RULES.laneCapacity - theirs.length, s);
+  const myComing = pendingTiles(vm, vm.me, lane, free, s);
 
   return `
     <div class="lane ${note ? 'has-note' : ''}">
       ${tower(vm, s, opp, lane)}
       <div class="units theirs">
         ${theirs.map((u) => unitTile(vm, s, opp, u)).join('')}
-        ${slots(RULES.laneCapacity - theirs.length)}
+        ${theirComing.html}
+        ${slots(RULES.laneCapacity - theirs.length - theirComing.shown)}
       </div>
       <div class="lane-divider">
         <span>${LANE_NAMES[lane]}</span>
@@ -263,7 +287,8 @@ function laneColumn(vm: ViewModel, s: GameState, lane: Lane): string {
       <div class="units mine ${droppable}" data-action="lane" data-lane="${lane}">
         ${mine.map((u) => unitTile(vm, s, vm.me, u)).join('')}
         ${unitGhosts.map(({ play, i, def }) => ghostTile(play.uid, i, def, locked)).join('')}
-        ${slots(free)}
+        ${myComing.html}
+        ${slots(free - myComing.shown)}
       </div>
       ${tower(vm, s, vm.me, lane)}
     </div>`;
@@ -292,6 +317,34 @@ function laneNote(vm: ViewModel, s: GameState, lane: Lane): { text: string; titl
     };
   }
   return null;
+}
+
+/**
+ * 預約中的單位、被流放的單位：用半透明的牌放在它們回來時會站的空位上，
+ * 所以不會改變戰線的高度。對手預約的牌在進場前看不到是什麼。
+ */
+function pendingTiles(vm: ViewModel, seat: Seat, lane: Lane, room: number, s: GameState): { html: string; shown: number } {
+  const list = s.sides[seat].pending.filter((p) => p.lane === lane && getDef(p.card.defId).type === 'unit');
+  const shown = list.slice(0, Math.max(0, room));
+  return { html: shown.map((p) => pendingTile(vm, seat, p)).join(''), shown: shown.length };
+}
+
+function pendingTile(vm: ViewModel, seat: Seat, p: Pending): string {
+  const def = getDef(p.card.defId);
+  const returning = p.hp !== undefined;
+  const hidden = !returning && seat !== vm.me;
+  const when = '下回合揭曉階段開始時';
+  const title = returning
+    ? `被流放的「${def.name}」：${when}帶著 ${p.hp} 點生命回到這一路的最後方`
+    : hidden
+      ? `對手預約了一張單位牌：${when}進場`
+      : `預約的「${def.name}」：${when}進場`;
+  return `
+    <div class="unit pending ${vm.factions[seat]}" title="${title}">
+      <span class="u-icon">${hidden ? '❔' : '⏳'}</span>
+      <span class="u-name">${hidden ? '預約中' : def.name}</span>
+      ${returning ? `<span class="u-hp">❤${p.hp}</span>` : '<span class="tag">預約</span>'}
+    </div>`;
 }
 
 function slots(n: number): string {
@@ -444,6 +497,7 @@ function hand(vm: ViewModel, s: GameState): string {
       return `
         <button class="${cls}" data-action="select" data-uid="${c.uid}" ${vm.busy || vm.waiting ? 'disabled' : ''} title="${tooltip(def)}">
           <span class="c-cost">${def.cost}</span>
+          ${def.delayed ? '<span class="c-delay" title="預約：下回合揭曉階段開始時才生效">⏳預約</span>' : ''}
           ${needsBurn ? '<span class="c-burn" title="要先焚卷一張牌才出得起">🔥</span>' : ''}
           <span class="c-icon">${def.icon}</span>
           <span class="c-name">${def.name}</span>
@@ -543,7 +597,7 @@ function tooltip(def: CardDef): string {
 
 function unitFx(e: GameEvent | null, uid: number): { cls: string; float: string } {
   if (!e) return { cls: '', float: '' };
-  if ((e.t === 'play' || e.t === 'summon') && e.uid === uid) return { cls: 'fx-reveal', float: '' };
+  if ((e.t === 'play' || e.t === 'summon' || e.t === 'arrive') && e.uid === uid) return { cls: 'fx-reveal', float: '' };
   if (e.t === 'unitDamage' && e.uid === uid) return { cls: 'fx-hit', float: `<span class="float dmg">−${e.amount}</span>` };
   if (e.t === 'unitHeal' && e.uid === uid) return { cls: 'fx-heal', float: `<span class="float heal">+${e.amount}</span>` };
   return { cls: '', float: '' };

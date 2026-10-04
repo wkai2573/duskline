@@ -214,6 +214,14 @@ export const FACTIONS: Record<PlayableFaction, { name: string; icon: string; blu
   orbit: { name: '星軌學會', icon: '✦', blurb: '不受晝夜影響，強在預約、流放和揭曉順序。' },
 };
 
+export const PLAYABLE_FACTIONS = Object.keys(FACTIONS) as PlayableFaction[];
+
+/** 從其餘陣營裡挑一個當對手；n 決定挑哪一個（連線對戰用種子，所以雙方挑到的一樣） */
+export function rivalOf(faction: PlayableFaction, n: number): PlayableFaction {
+  const others = PLAYABLE_FACTIONS.filter((f) => f !== faction);
+  return others[Math.abs(Math.trunc(n)) % others.length];
+}
+
 export function cardsOf(faction: PlayableFaction): CardDef[] {
   return DEFS.filter((d) => d.faction === faction);
 }
