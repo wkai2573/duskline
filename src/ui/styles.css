@@ -175,6 +175,8 @@ body[data-phase='night'] .sky-night {
   flex-direction: column;
   gap: 8px;
   min-width: 0;
+  /* 讓控制列能依「欄位實際寬度」而不是視窗寬度決定要不要預留兩行 */
+  container: field / inline-size;
 }
 
 /* ── 頂列 ── */
@@ -392,6 +394,8 @@ body[data-phase='night'] .sky-night {
   display: flex;
   align-items: center;
   gap: 8px;
+  /* 放法術時晶片會出現在這一列；先留好高度，版面才不會跳 */
+  min-height: 28px;
   font-family: var(--font-display);
   font-size: 12px;
   letter-spacing: 0.3em;
@@ -408,8 +412,8 @@ body[data-phase='night'] .sky-night {
 
 .lane-spells {
   display: flex;
-  flex-wrap: wrap;
   gap: 4px;
+  min-width: 0;
 }
 
 .unit {
@@ -616,6 +620,16 @@ body[data-phase='night'] .sky-night {
   border-radius: 12px;
 }
 
+/*
+ * 欄位太窄時，焚卷、全場法術的晶片一出現就會讓控制列換成兩行，
+ * 手牌會被推下去。這時先把兩行的高度預留好，換不換行畫面都不會跳。
+ */
+@container field (max-width: 860px) {
+  .controls {
+    min-height: 104px;
+  }
+}
+
 .mana {
   display: flex;
   align-items: center;
@@ -682,7 +696,12 @@ body[data-phase='night'] .sky-night {
 
 .hint {
   flex: 1;
-  min-width: 180px;
+  /* 焚卷後按鈕會變長；提示文字別佔太寬，免得整列換行 */
+  min-width: 120px;
+  /* 提示文字有時一行、有時兩行，先留兩行高，按鈕才不會跟著跳 */
+  min-height: 2.8em;
+  display: flex;
+  align-items: center;
   font-size: 13px;
   color: var(--ink-soft);
 }
@@ -1304,6 +1323,23 @@ kbd {
 
   .lane {
     padding: 6px 5px;
+  }
+
+  /* 手機的直向空間寶貴，不預留兩行 */
+  .controls {
+    min-height: 0;
+  }
+
+  /* 一列塞不下路名加法術晶片，窄螢幕讓晶片換到下一行 */
+  .lane-divider {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .lane-spells {
+    flex-basis: 100%;
+    justify-content: center;
+    flex-wrap: wrap;
   }
 
   .unit {

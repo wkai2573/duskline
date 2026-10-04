@@ -249,8 +249,10 @@ function laneColumn(vm: ViewModel, s: GameState, lane: Lane): string {
         ${theirs.map((u) => unitTile(vm, s, opp, u)).join('')}
         ${slots(RULES.laneCapacity - theirs.length)}
       </div>
-      <div class="lane-divider"><span>${LANE_NAMES[lane]}</span></div>
-      ${spellGhosts.length ? `<div class="lane-spells">${spellGhosts.map(({ play, i, def }) => ghostChip(play.uid, i, def, locked)).join('')}</div>` : ''}
+      <div class="lane-divider">
+        <span>${LANE_NAMES[lane]}</span>
+        ${spellGhosts.length ? `<span class="lane-spells">${spellGhosts.map(({ play, i, def }) => ghostChip(play.uid, i, def, locked)).join('')}</span>` : ''}
+      </div>
       <div class="units mine ${droppable}" data-action="lane" data-lane="${lane}">
         ${mine.map((u) => unitTile(vm, s, vm.me, u)).join('')}
         ${unitGhosts.map(({ play, i, def }) => ghostTile(play.uid, i, def, locked)).join('')}
