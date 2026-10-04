@@ -1,12 +1,16 @@
 import type { Plan, PlayableFaction } from '../engine/index.ts';
 
 /** 協定版本：雙方不同就拒絕開局，避免規則不一致造成不同步 */
-export const PROTOCOL_VERSION = 1;
+export const PROTOCOL_VERSION = 2;
 
 export type NetMessage =
   /** 加入者連上後的第一句話 */
   | { t: 'hello'; version: number }
-  /** 房主決定種子和陣營，雙方各自用它開局 */
+  /** 房主回覆房主扮演的陣營，加入者據此挑自己的陣營 */
+  | { t: 'welcome'; faction: PlayableFaction }
+  /** 加入者挑好的陣營（可以和房主相同） */
+  | { t: 'pick'; faction: PlayableFaction }
+  /** 房主決定種子，雙方各自用它開局 */
   | { t: 'start'; seed: number; factions: [PlayableFaction, PlayableFaction] }
   /** 先送出牌內容的雜湊（封好的信封），對方看不到內容 */
   | { t: 'commit'; round: number; hash: string }

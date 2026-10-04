@@ -126,6 +126,11 @@ export function createApp(root: HTMLElement, rulesDialog: HTMLDialogElement): vo
       channel,
       role,
       {
+        chooseFaction: (hostFaction) => {
+          if (vm.screen !== 'lobby' || !vm.lobby) return;
+          vm.lobby = { ...vm.lobby, status: '已連線，請選擇你的陣營', pickAgainst: hostFaction };
+          paint();
+        },
         start: ({ seed, factions, mySeat }) => beginGame(seed, factions, mySeat, 'online'),
         opponentCommitted: (round) => {
           if (!vm.online) return;
@@ -193,7 +198,9 @@ export function createApp(root: HTMLElement, rulesDialog: HTMLDialogElement): vo
       if (gen !== generation) return channel.close();
       attachMatch(channel, 'guest');
       // 開局訊息通常馬上就到，beginGame 會切到對戰畫面
-      if (vm.screen === 'lobby') vm.lobby = { role: 'guest', code, status: '已連線，等待房主開局…', error: false, copied: false };
+      if (vm.screen === 'lobby' && !vm.lobby?.pickAgainst) {
+        vm.lobby = { role: 'guest', code, status: '已連線，等待房主回應…', error: false, copied: false };
+      }
     } catch (err) {
       if (gen !== generation) return;
       vm.lobby = { role: 'guest', code, status: (err as Error).message, error: true, copied: false };
@@ -343,6 +350,12 @@ export function createApp(root: HTMLElement, rulesDialog: HTMLDialogElement): vo
         return;
       case 'host':
         void createRoom(el.dataset.faction as PlayableFaction);
+        return;
+      case 'pick':
+        if (vm.screen !== 'lobby' || !vm.lobby?.pickAgainst) return;
+        match?.pickFaction(el.dataset.faction as PlayableFaction);
+        vm.lobby = { role: 'guest', code: vm.lobby.code, status: '已選好陣營，等待房主開局…', error: false, copied: false };
+        paint();
         return;
       case 'copy-link':
         void copyInvite();

@@ -6,7 +6,8 @@ import { createMatch, type GameInfo, type MatchEvents, type OnlineMatch } from '
 import { PROTOCOL_VERSION, isValidRoomCode, makeRoomCode, normalizeRoomCode, parsePlan, type NetMessage } from '../src/net/protocol.ts';
 
 /** 讓排隊中的非同步訊息都送達 */
-const flush = () => new Promise((resolve) => setTimeout(resolve, 20));
+/** Windows 上 setTimeout(0) 可能要十幾毫秒，開局要來回四趟，所以預設等久一點 */
+const flush = (ms = 20) => new Promise((resolve) => setTimeout(resolve, ms));
 
 interface Side {
   match: OnlineMatch;
@@ -22,14 +23,17 @@ function makeSide(role: 'host' | 'guest', channel: ReturnType<typeof createLoopb
   let closed = false;
   let onStart!: (g: GameInfo) => void;
   const started = new Promise<GameInfo>((resolve) => (onStart = resolve));
+  let match!: OnlineMatch;
   const events: MatchEvents = {
+    // 加入者一律挑晨曦
+    chooseFaction: () => match.pickFaction('dawn'),
     start: (g) => onStart(g),
     opponentCommitted: (round) => committedRounds.push(round),
     rematchRequested: () => {},
     error: (m) => errors.push(m),
     closed: () => (closed = true),
   };
-  const match = createMatch(channel, role, events, { hostFaction: 'dusk', randomSeed: () => 20260929 });
+  match = createMatch(channel, role, events, { hostFaction: 'dusk', randomSeed: () => 20260929 });
   return { match, started, errors, closed: () => closed, committedRounds };
 }
 
@@ -54,12 +58,11 @@ async function playOut(side: Side): Promise<GameState> {
 }
 
 describe('連線對戰協定', () => {
-  it('房主決定種子和陣營，加入者拿另一個陣營、坐 1 號位', async () => {
+  it('房主決定種子，加入者自己挑陣營、坐 1 號位', async () => {
     const [host, guest] = pair();
     const [h, g] = await Promise.all([host.started, guest.started]);
-    // 房主扮演暮影；對手陣營由種子決定（20260929 是奇數 → 其餘陣營的第二個）
-    expect(h).toEqual({ seed: 20260929, factions: ['dusk', 'orbit'], mySeat: 0 });
-    expect(g).toEqual({ seed: 20260929, factions: ['dusk', 'orbit'], mySeat: 1 });
+    expect(h).toEqual({ seed: 20260929, factions: ['dusk', 'dawn'], mySeat: 0 });
+    expect(g).toEqual({ seed: 20260929, factions: ['dusk', 'dawn'], mySeat: 1 });
   });
 
   it('雙方各自結算，整局打完盤面完全相同', async () => {
@@ -83,7 +86,7 @@ describe('連線對戰協定', () => {
 
     void guest.match.submit(1, { plays: [] });
     await flush();
-    expect(seen.map((m) => m.t)).toEqual(['hello', 'commit']);
+    expect(seen.map((m) => m.t)).toEqual(['hello', 'pick', 'commit']);
     expect(host.committedRounds).toEqual([1]);
 
     const theirs = host.match.submit(1, { plays: [] });
@@ -118,7 +121,9 @@ describe('連線對戰協定', () => {
   it('雙方都同意才會再戰一局，而且拿到新的開局', async () => {
     const [a, b] = createLoopback();
     const starts: GameInfo[] = [];
+    let guest!: OnlineMatch;
     const events = (): MatchEvents => ({
+      chooseFaction: () => guest.pickFaction('orbit'),
       start: (g) => starts.push(g),
       opponentCommitted: () => {},
       rematchRequested: () => {},
@@ -126,22 +131,48 @@ describe('連線對戰協定', () => {
       closed: () => {},
     });
     const host = createMatch(a, 'host', events());
-    const guest = createMatch(b, 'guest', events());
-    await flush();
+    guest = createMatch(b, 'guest', events());
+    await flush(150);
     expect(starts).toHaveLength(2);
 
     host.requestRematch();
-    await flush();
+    await flush(50);
     expect(starts).toHaveLength(2);
     guest.requestRematch();
-    await flush();
+    await flush(50);
     expect(starts).toHaveLength(4);
+    // 再戰一局沿用同樣的陣營
+    expect(starts[3].factions).toEqual(starts[1].factions);
+  });
+
+  it('加入者可以挑和房主相同的陣營，也不能亂挑不存在的陣營', async () => {
+    const [a, b] = createLoopback();
+    const starts: GameInfo[] = [];
+    let guest!: OnlineMatch;
+    const events = (pick: string): MatchEvents => ({
+      chooseFaction: () => {
+        guest.pickFaction('orbit');
+        b.send({ t: 'pick', faction: pick as 'dawn' });
+      },
+      start: (g) => starts.push(g),
+      opponentCommitted: () => {},
+      rematchRequested: () => {},
+      error: () => {},
+      closed: () => {},
+    });
+    createMatch(a, 'host', events('x'), { hostFaction: 'orbit' });
+    guest = createMatch(b, 'guest', events('nonexistent'));
+    await flush(150);
+    // 第一個合法的選擇生效（和房主一樣是星軌），後來亂送的被忽略
+    expect(starts).toHaveLength(2);
+    expect(starts[0].factions).toEqual(['orbit', 'orbit']);
   });
 
   it('版本不同時拒絕開局', async () => {
     const [a, b] = createLoopback();
     const errors: string[] = [];
     createMatch(a, 'host', {
+      chooseFaction: () => {},
       start: () => {},
       opponentCommitted: () => {},
       rematchRequested: () => {},

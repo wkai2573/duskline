@@ -1,4 +1,4 @@
-import { rivalOf, type GameState, type Plan, type PlayableFaction, type Seat } from '../engine/index.ts';
+import { PLAYABLE_FACTIONS, type GameState, type Plan, type PlayableFaction, type Seat } from '../engine/index.ts';
 import { PROTOCOL_VERSION, commitText, parsePlan, randomHex, sha256, type Channel } from './protocol.ts';
 
 export interface GameInfo {
@@ -8,6 +8,8 @@ export interface GameInfo {
 }
 
 export interface MatchEvents {
+  /** 加入者：連上房間後，房主告知他扮演的陣營，請玩家挑自己的（呼叫 pickFaction） */
+  chooseFaction(hostFaction: PlayableFaction): void;
   /** 開局（包含再戰一局） */
   start(game: GameInfo): void;
   /** 對手已經送出這回合的出牌（內容還看不到） */
@@ -23,6 +25,8 @@ export interface OnlineMatch {
   readonly mySeat: Seat;
   /** 送出這回合的出牌，等雙方都公開後回傳對手的出牌 */
   submit(round: number, plan: Plan): Promise<Plan>;
+  /** 加入者挑好自己的陣營，房主收到後開局 */
+  pickFaction(faction: PlayableFaction): void;
   /** 結算完送出盤面雜湊，和對手比對 */
   sync(round: number, state: GameState): Promise<void>;
   requestRematch(): void;
@@ -30,7 +34,7 @@ export interface OnlineMatch {
 }
 
 export interface MatchOptions {
-  /** 房主扮演的陣營，加入者自動拿另一個 */
+  /** 房主扮演的陣營 */
   hostFaction?: PlayableFaction;
   /** 測試時可以固定種子 */
   randomSeed?: () => number;
@@ -61,7 +65,8 @@ export function createMatch(
   let rematchMine = false;
   let rematchTheirs = false;
   let finished = false;
-  let rival: PlayableFaction | undefined;
+  /** 加入者挑的陣營；再戰一局時沿用 */
+  let guestFaction: PlayableFaction | undefined;
 
   function reset(): void {
     theirCommits = new Map();
@@ -88,10 +93,8 @@ export function createMatch(
 
   function startGame(): void {
     reset();
-    const seed = randomSeed();
-    // 第一局由種子決定對手的陣營；再戰一局時沿用，免得換了對手
-    rival ??= rivalOf(hostFaction, seed);
-    const game: GameInfo = { seed, factions: [hostFaction, rival], mySeat };
+    if (!guestFaction) return;
+    const game: GameInfo = { seed: randomSeed(), factions: [hostFaction, guestFaction], mySeat };
     channel.send({ t: 'start', seed: game.seed, factions: game.factions });
     events.start(game);
   }
@@ -129,7 +132,15 @@ export function createMatch(
           fail(message);
           return;
         }
+        channel.send({ t: 'welcome', faction: hostFaction });
+        return;
+      case 'pick':
+        if (role !== 'host' || guestFaction || !PLAYABLE_FACTIONS.includes(msg.faction)) return;
+        guestFaction = msg.faction;
         startGame();
+        return;
+      case 'welcome':
+        if (role === 'guest') events.chooseFaction(msg.faction);
         return;
       case 'start':
         if (role !== 'guest') return;
@@ -187,6 +198,11 @@ export function createMatch(
       channel.send({ t: 'commit', round, hash });
       maybeReveal(round);
       return result;
+    },
+
+    pickFaction(faction) {
+      if (finished || role !== 'guest') return;
+      channel.send({ t: 'pick', faction });
     },
 
     async sync(round, state) {

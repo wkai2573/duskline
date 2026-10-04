@@ -31,6 +31,8 @@ export interface LobbyView {
   status: string;
   error: boolean;
   copied: boolean;
+  /** 加入者：房主扮演的陣營。有值就顯示「請選擇你的陣營」 */
+  pickAgainst?: PlayableFaction;
 }
 
 export interface OnlineView {
@@ -135,6 +137,7 @@ function startScreen(vm: ViewModel): string {
 function lobbyScreen(lobby: LobbyView): string {
   const status = `<p class="lobby-status ${lobby.error ? 'error' : ''}" role="status">${lobby.status}</p>`;
   let body: string;
+  const picking = lobby.role === 'guest' && !!lobby.pickAgainst && !lobby.error;
   if (lobby.role === 'host' && lobby.code && !lobby.error) {
     body = `
       <p class="eyebrow">房間代碼</p>
@@ -143,6 +146,23 @@ function lobbyScreen(lobby: LobbyView): string {
       <p class="invite-link">${inviteLink(lobby.code)}</p>
       <button class="btn primary" data-action="copy-link">${lobby.copied ? '✓ 已複製' : '複製邀請連結'}</button>
       ${status}`;
+  } else if (lobby.pickAgainst && !lobby.error) {
+    const host = FACTIONS[lobby.pickAgainst];
+    const cards = PLAYABLE_FACTIONS.map((f) => {
+      const info = FACTIONS[f];
+      return `
+        <button class="faction-card ${f}" data-action="pick" data-faction="${f}">
+          <span class="crest">${info.icon}</span>
+          <span class="f-name">${info.name}</span>
+          <span class="f-blurb">${info.blurb}</span>
+          <span class="f-cta">扮演這個陣營 →</span>
+        </button>`;
+    }).join('');
+    body = `
+      <p class="eyebrow">加入房間 ${lobby.code}</p>
+      <h2 class="lobby-title">選擇你的陣營</h2>
+      <p class="lobby-hint">房主扮演 ${host.icon} ${host.name}。你可以選同一個陣營。</p>
+      <div class="factions">${cards}</div>`;
   } else {
     body = `
       <p class="eyebrow">${lobby.role === 'host' ? '建立房間' : `加入房間 ${lobby.code}`}</p>
@@ -150,7 +170,7 @@ function lobbyScreen(lobby: LobbyView): string {
   }
   return `
     <div class="start">
-      <div class="start-inner lobby">
+      <div class="start-inner lobby ${picking ? 'picking' : ''}">
         ${body}
         <button class="btn" data-action="leave">${lobby.error ? '回到首頁' : '取消'}</button>
       </div>
