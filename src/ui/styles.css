@@ -272,6 +272,18 @@ body[data-phase='night'] .sky-night {
   color: var(--theirs);
 }
 
+.initiative small {
+  margin-left: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  opacity: 0.85;
+}
+
+/* 後揭曉的一方有資訊優勢：標籤用實心底色，一眼就看得出這回合輪到誰佔便宜 */
+.initiative.edge {
+  background: color-mix(in srgb, currentColor 16%, transparent);
+}
+
 .top-actions {
   margin-left: auto;
   display: flex;
@@ -408,6 +420,21 @@ body[data-phase='night'] .sky-night {
   flex: 1;
   height: 1px;
   background: var(--line);
+}
+
+/* 塔已摧毀的那一路：說明這一路現在只能防守或只能進攻 */
+.lane-note {
+  flex: none;
+  padding: 1px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--ink-soft) 14%, transparent);
+  font-family: var(--font-body, inherit);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: normal;
+  white-space: nowrap;
+  cursor: help;
 }
 
 .lane-spells {

@@ -185,9 +185,14 @@ function topbar(vm: ViewModel, s: GameState): string {
       <div class="brand"><span class="brand-zh">晨昏戰線</span><span class="brand-en">Duskline</span></div>
       <div class="round-label">第 ${s.round} / ${RULES.maxRounds} 回合</div>
       <div class="track" aria-label="晝夜進度">${pips.join('')}</div>
-      <div class="initiative ${first ? 'mine' : 'theirs'}"
-           title="${first ? '你先揭曉：對手的晝夜法術會蓋掉你的' : '對手先揭曉：你的晝夜法術會蓋掉對手的'}">
-        ${first ? '你先揭曉' : '對手先揭曉'}
+      <div class="initiative ${first ? 'mine' : 'theirs edge'}"
+           title="${
+             first
+               ? '你先揭曉：對手後揭曉，他的晝夜法術會蓋掉你的，揭曉效果也能打到你剛放下的單位'
+               : '對手先揭曉：你後揭曉，你的晝夜法術會蓋掉對手的，揭曉效果也能打到對手剛放下的單位'
+           }">
+        <b>${first ? '你先揭曉' : '對手先揭曉'}</b>
+        <small>${first ? '天色可能被蓋過' : '你可以蓋過天色'}</small>
       </div>
       ${online ? '<div class="net-badge" title="和朋友連線對戰中">🌐 連線對戰</div>' : ''}
       <div class="top-actions">
@@ -241,9 +246,10 @@ function laneColumn(vm: ViewModel, s: GameState, lane: Lane): string {
   const droppable = vm.selected !== null && !vm.busy && !vm.waiting ? 'droppable' : '';
   const free = RULES.laneCapacity - mine.length - unitGhosts.length;
   const locked = vm.waiting;
+  const note = laneNote(vm, s, lane);
 
   return `
-    <div class="lane">
+    <div class="lane ${note ? 'has-note' : ''}">
       ${tower(vm, s, opp, lane)}
       <div class="units theirs">
         ${theirs.map((u) => unitTile(vm, s, opp, u)).join('')}
@@ -251,6 +257,7 @@ function laneColumn(vm: ViewModel, s: GameState, lane: Lane): string {
       </div>
       <div class="lane-divider">
         <span>${LANE_NAMES[lane]}</span>
+        ${note ? `<span class="lane-note" title="${note.title}">${note.text}</span>` : ''}
         ${spellGhosts.length ? `<span class="lane-spells">${spellGhosts.map(({ play, i, def }) => ghostChip(play.uid, i, def, locked)).join('')}</span>` : ''}
       </div>
       <div class="units mine ${droppable}" data-action="lane" data-lane="${lane}">
@@ -260,6 +267,31 @@ function laneColumn(vm: ViewModel, s: GameState, lane: Lane): string {
       </div>
       ${tower(vm, s, vm.me, lane)}
     </div>`;
+}
+
+/**
+ * 塔被摧毀的那一路，打過去的傷害會浪費（見 combat.ts 的 hitTower）。
+ * 在路名旁提示這一路現在能做什麼，免得把兵力放在打不到塔的路上。
+ */
+function laneNote(vm: ViewModel, s: GameState, lane: Lane): { text: string; title: string } | null {
+  const theirTowerDown = s.sides[other(vm.me)].towers[lane] <= 0;
+  const myTowerDown = s.sides[vm.me].towers[lane] <= 0;
+  if (theirTowerDown && myTowerDown) {
+    return { text: '已無作用', title: '雙方的塔都已摧毀：這一路的傷害全部浪費，單位只會互相交戰' };
+  }
+  if (theirTowerDown) {
+    return {
+      text: '只能防守',
+      title: '對手的塔已摧毀：我方單位在這一路打不到塔，只剩下擋住對手、消耗對手單位的用途。要拆塔請轉攻其他路',
+    };
+  }
+  if (myTowerDown) {
+    return {
+      text: '只能進攻',
+      title: '我方的塔已摧毀：對手在這一路溢出的傷害不會傷到你，但雙方單位仍然會互相交戰',
+    };
+  }
+  return null;
 }
 
 function slots(n: number): string {
