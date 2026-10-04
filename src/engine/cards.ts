@@ -123,6 +123,63 @@ const DEFS: CardDef[] = [
     text: '本回合與下回合都是黑夜。',
   },
 
+  // ── 星軌學會：不受晝夜影響，強在出牌的時機 ──
+  {
+    id: 'apprentice', name: '觀星學徒', faction: 'orbit', type: 'unit', cost: 1,
+    dayAtk: 1, nightAtk: 1, hp: 1, icon: '🔭',
+    effects: [{ on: 'reveal', order: 'second', do: 'draw', amount: 1 }],
+    text: '揭曉（後揭曉）：抽 1 張牌。',
+  },
+  {
+    id: 'lurker', name: '時隙伏兵', faction: 'orbit', type: 'unit', cost: 1,
+    dayAtk: 2, nightAtk: 2, hp: 3, delayed: true, icon: '🌫️',
+    text: '預約：下回合揭曉階段開始時才進場。',
+  },
+  {
+    id: 'bellguard', name: '鐘樓守衛', faction: 'orbit', type: 'unit', cost: 2,
+    dayAtk: 2, nightAtk: 2, hp: 4, icon: '🔔', text: '',
+  },
+  {
+    id: 'comet', name: '彗星使者', faction: 'orbit', type: 'unit', cost: 3,
+    dayAtk: 3, nightAtk: 3, hp: 2, keywords: { ambush: true }, icon: '☄️',
+    text: '突襲：攻擊直接打塔。',
+  },
+  {
+    id: 'observer', name: '星軌觀測者', faction: 'orbit', type: 'unit', cost: 3,
+    dayAtk: 2, nightAtk: 2, hp: 2, icon: '🪐',
+    effects: [
+      { on: 'reveal', order: 'first', do: 'damageFront', amount: 2 },
+      { on: 'reveal', order: 'second', do: 'draw', amount: 1 },
+    ],
+    text: '揭曉（先揭曉）：對此路最前方的敵人造成 2 點傷害。揭曉（後揭曉）：抽 1 張牌。',
+  },
+  {
+    id: 'colossus', name: '星軌巨像', faction: 'orbit', type: 'unit', cost: 3,
+    dayAtk: 4, nightAtk: 4, hp: 5, delayed: true, icon: '🗿',
+    text: '預約：下回合揭曉階段開始時才進場。',
+  },
+  {
+    id: 'archon', name: '星軌執政官', faction: 'orbit', type: 'unit', cost: 5,
+    dayAtk: 4, nightAtk: 4, hp: 6, icon: '👁️',
+    effects: [{ on: 'reveal', order: 'second', do: 'damageLane', amount: 1 }],
+    text: '揭曉（後揭曉）：對此路所有敵方單位造成 1 點傷害。',
+  },
+  {
+    id: 'banish', name: '時間流放', faction: 'orbit', type: 'spell', cost: 2, target: 'lane', icon: '⏳',
+    effects: [{ on: 'reveal', do: 'exileFront' }],
+    text: '指定一路：流放敵方最前方的單位。它下回合揭曉階段開始時，帶著原本的生命回到這一路的最後方。',
+  },
+  {
+    id: 'reverse', name: '逆轉星軌', faction: 'orbit', type: 'spell', cost: 2, target: 'global', icon: '🌀',
+    effects: [{ on: 'reveal', do: 'claimSecond' }],
+    text: '全場：下回合你後揭曉。',
+  },
+  {
+    id: 'preview', name: '星圖預演', faction: 'orbit', type: 'spell', cost: 1, target: 'global', delayed: true, icon: '🗺️',
+    effects: [{ on: 'reveal', do: 'damageFronts', amount: 2 }],
+    text: '預約・全場：下回合揭曉階段開始時，對每一路敵方最前方的單位造成 2 點傷害。',
+  },
+
   // ── 衍生物：只會被召喚，不能放進牌組 ──
   {
     id: 'militia', name: '民兵', faction: 'token', type: 'unit', cost: 0,
@@ -151,6 +208,7 @@ export type PlayableFaction = Exclude<Faction, 'token'>;
 export const FACTIONS: Record<PlayableFaction, { name: string; icon: string; blurb: string }> = {
   dawn: { name: '晨曦騎士團', icon: '☀', blurb: '白天強勢，擅長守護和修復塔。' },
   dusk: { name: '暮影盟約', icon: '☾', blurb: '夜晚強勢，會吸血、會復生。' },
+  orbit: { name: '星軌學會', icon: '✦', blurb: '不受晝夜影響，強在預約、流放和揭曉順序。' },
 };
 
 export function cardsOf(faction: PlayableFaction): CardDef[] {
@@ -161,6 +219,7 @@ export function cardsOf(faction: PlayableFaction): CardDef[] {
 export const PRESET_DECKS: Record<PlayableFaction, string[]> = {
   dawn: cardsOf('dawn').flatMap((d) => [d.id, d.id]),
   dusk: cardsOf('dusk').flatMap((d) => [d.id, d.id]),
+  orbit: cardsOf('orbit').flatMap((d) => [d.id, d.id]),
 };
 
 /** 構築規則驗證；合法時回傳 null，否則回傳原因 */

@@ -41,10 +41,12 @@ export function validatePlan(s: GameState, seat: Seat, plan: Plan): string | nul
     used.add(play.uid);
 
     const def = getDef(card.defId);
+    if (def.delayed && s.round >= RULES.maxRounds) return `「${def.name}」是預約牌，最後一回合打出也不會生效`;
     cost += def.cost;
     if (needsLane(def)) {
       if (play.lane === undefined) return `「${def.name}」需要指定一路`;
-      if (def.type === 'unit' && ++laneCount[play.lane] > RULES.laneCapacity) {
+      // 預約的單位現在不佔位置，進場時才會檢查
+      if (def.type === 'unit' && !def.delayed && ++laneCount[play.lane] > RULES.laneCapacity) {
         return `${LANE_NAMES[play.lane]}已經滿了（最多 ${RULES.laneCapacity} 個單位）`;
       }
     }

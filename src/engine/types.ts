@@ -22,7 +22,7 @@ export const RULES = {
   laneCapacity: 3,
 } as const;
 
-export type Faction = 'dawn' | 'dusk' | 'token';
+export type Faction = 'dawn' | 'dusk' | 'orbit' | 'token';
 export type CardType = 'unit' | 'spell';
 
 /** 效果的觸發時機：揭曉（進場或施放時）、亡語（陣亡時） */
@@ -36,7 +36,10 @@ export type EffectKind =
   | 'lockNextPhase'
   | 'draw'
   | 'summon'
-  | 'returnToHand';
+  | 'returnToHand'
+  | 'damageFronts'
+  | 'exileFront'
+  | 'claimSecond';
 
 /** 卡片效果是純資料，由 effects.ts 的處理表負責執行 */
 export interface EffectSpec {
@@ -44,6 +47,8 @@ export interface EffectSpec {
   do: EffectKind;
   /** 只在這個晝夜才發動 */
   if?: Phase;
+  /** 只在自己先揭曉／後揭曉時才發動 */
+  order?: 'first' | 'second';
   amount?: number;
   phase?: Phase;
   /** summon 用：召喚哪一種衍生物 */
@@ -72,6 +77,8 @@ export interface CardDef {
   effects?: EffectSpec[];
   /** 法術要指定一路，還是作用於全場 */
   target?: 'lane' | 'global';
+  /** 預約：這回合付費，下回合揭曉階段開始時才進場或發動 */
+  delayed?: boolean;
   icon: string;
   text: string;
 }
@@ -94,12 +101,23 @@ export type Towers = [number, number, number];
 /** 每一路的單位，陣列第 0 個是最前方 */
 export type LaneRow = [Unit[], Unit[], Unit[]];
 
+/** 還沒進場的東西：預約的牌，或被流放、之後要回來的單位 */
+export interface Pending {
+  card: CardInst;
+  lane?: Lane;
+  /** 到這一回合的揭曉階段開始時才生效 */
+  due: number;
+  /** 被流放的單位回來時的生命；沒有這個欄位的是預約的牌 */
+  hp?: number;
+}
+
 export interface SideState {
   deck: CardInst[];
   hand: CardInst[];
   discard: CardInst[];
   /** 焚卷移出遊戲的卡 */
   exiled: CardInst[];
+  pending: Pending[];
   lanes: LaneRow;
   towers: Towers;
 }
@@ -115,6 +133,8 @@ export interface GameState {
   nextPhase: Phase | null;
   /** 本回合先揭曉的一方 */
   initiative: Seat;
+  /** 逆轉星軌之類的效果會指定下回合先揭曉的一方；沒有的話就是換人 */
+  nextInitiative: Seat | null;
   sides: [SideState, SideState];
   nextUid: number;
   winner: Seat | 'draw' | null;
@@ -143,6 +163,10 @@ export type GameEvent =
   | { t: 'summon'; seat: Seat; uid: number; defId: string; lane: Lane }
   | { t: 'phase'; seat: Seat; phase: Phase }
   | { t: 'lockPhase'; seat: Seat; phase: Phase }
+  | { t: 'schedule'; seat: Seat; uid: number; defId: string; lane?: Lane }
+  | { t: 'arrive'; seat: Seat; uid: number; defId: string; lane?: Lane; returning: boolean }
+  | { t: 'exile'; seat: Seat; lane: Lane; uid: number; defId: string }
+  | { t: 'claimSecond'; seat: Seat }
   | { t: 'combat' }
   | { t: 'unitDamage'; seat: Seat; lane: Lane; uid: number; defId: string; amount: number }
   | { t: 'unitHeal'; seat: Seat; lane: Lane; uid: number; defId: string; amount: number }

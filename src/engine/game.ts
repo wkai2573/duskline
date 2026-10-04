@@ -66,7 +66,8 @@ export function resolveRound(state: GameState, plans: readonly [Plan, Plan], opt
 /** 就地修改：進入下一回合 */
 export function startRound(s: GameState, emit: Emit): void {
   s.round += 1;
-  if (s.round > 1) s.initiative = other(s.initiative);
+  if (s.round > 1) s.initiative = s.nextInitiative ?? other(s.initiative);
+  s.nextInitiative = null;
   s.phase = s.nextPhase ?? phaseOfRound(s, s.round);
   s.nextPhase = null;
   emit({ t: 'roundStart', round: s.round, phase: s.phase, initiative: s.initiative });

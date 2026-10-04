@@ -22,6 +22,7 @@ export function newGame({ seed, decks }: NewGameOptions): GameState {
     hand: [],
     discard: [],
     exiled: [],
+    pending: [],
     lanes: [[], [], []],
     towers: [RULES.towerHp, RULES.towerHp, RULES.towerHp],
   });
@@ -33,6 +34,7 @@ export function newGame({ seed, decks }: NewGameOptions): GameState {
     phase: 'day',
     nextPhase: null,
     initiative: 0,
+    nextInitiative: null,
     sides: [makeSide(decks[0]), makeSide(decks[1])],
     nextUid: 0,
     winner: null,

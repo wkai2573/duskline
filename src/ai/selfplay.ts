@@ -42,15 +42,19 @@ export interface SeriesReport {
 }
 
 /**
- * 晨曦 vs 暮影打 games 局，一半的局交換座位，
+ * 指定的兩個陣營（預設晨曦 vs 暮影）打 games 局，一半的局交換座位，
  * 避免把「座位 0 先算」之類的實作偏差誤判成陣營強弱。
  */
-export function runSeries(games: number, seedBase = 1): SeriesReport {
-  const wins: Record<PlayableFaction, number> = { dawn: 0, dusk: 0 };
+export function runSeries(
+  games: number,
+  seedBase = 1,
+  pair: readonly [PlayableFaction, PlayableFaction] = ['dawn', 'dusk'],
+): SeriesReport {
+  const wins: Record<PlayableFaction, number> = { dawn: 0, dusk: 0, orbit: 0 };
   let draws = 0, rounds = 0, early = 0, firstWins = 0, seat0Wins = 0;
 
   for (let i = 0; i < games; i++) {
-    const factions: [PlayableFaction, PlayableFaction] = i % 2 === 0 ? ['dawn', 'dusk'] : ['dusk', 'dawn'];
+    const factions: [PlayableFaction, PlayableFaction] = i % 2 === 0 ? [pair[0], pair[1]] : [pair[1], pair[0]];
     const r = playMatch(seedBase + i, factions);
     rounds += r.rounds;
     if (r.early) early++;

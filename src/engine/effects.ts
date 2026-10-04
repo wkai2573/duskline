@@ -74,6 +74,31 @@ const handlers: Record<EffectKind, Handler> = {
     for (let i = 0; i < (spec.amount ?? 1); i++) summonToken(s, seat, lane, spec.token, emit);
   },
 
+  damageFronts({ s, seat, emit }, spec) {
+    const enemy = other(seat);
+    for (const lane of LANES) {
+      const target = frontUnit(s, enemy, lane);
+      if (target) damageUnit(s, enemy, lane, target, spec.amount ?? 0, emit);
+    }
+  },
+
+  exileFront({ s, seat, lane, emit }) {
+    if (lane === undefined) return;
+    const enemy = other(seat);
+    const target = frontUnit(s, enemy, lane);
+    if (!target) return;
+    const side = s.sides[enemy];
+    side.lanes[lane] = side.lanes[lane].filter((u) => u.uid !== target.uid);
+    // 下回合才回來，所以就算是先揭曉的人流放的，對手同一回合的揭曉也不會把它放回去
+    side.pending.push({ card: { uid: target.uid, defId: target.defId }, lane, due: s.round + 1, hp: target.hp });
+    emit({ t: 'exile', seat: enemy, lane, uid: target.uid, defId: target.defId });
+  },
+
+  claimSecond({ s, seat, emit }) {
+    s.nextInitiative = other(seat);
+    emit({ t: 'claimSecond', seat });
+  },
+
   returnToHand({ s, seat, uid, emit }) {
     const side = s.sides[seat];
     const i = side.discard.findIndex((c) => c.uid === uid);
@@ -89,6 +114,7 @@ export function runEffects(ctx: EffectCtx, trigger: Trigger, def: CardDef): void
     if (spec.on !== trigger) continue;
     // 晝夜條件在發動當下判斷，所以同一回合先施放破曉會影響後面的效果
     if (spec.if && spec.if !== ctx.s.phase) continue;
+    if (spec.order && (ctx.s.initiative === ctx.seat) !== (spec.order === 'first')) continue;
     handlers[spec.do](ctx, spec);
   }
 }

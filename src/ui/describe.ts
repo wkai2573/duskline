@@ -43,6 +43,21 @@ export function describe(e: GameEvent, me: Seat): LogLine | null {
       return { kind: 'big', text: `${who(e.seat)}讓天色轉為${phaseName(e.phase)}` };
     case 'lockPhase':
       return { kind: 'big', text: `下回合將維持${phaseName(e.phase)}` };
+    case 'schedule': {
+      // 預約的內容要等到發動才會公開
+      const what = e.seat === me ? name(e.defId) : '一張牌';
+      return { kind: side(e.seat), text: `${who(e.seat)}預約了${what}，下回合才會生效` };
+    }
+    case 'arrive': {
+      const def = getDef(e.defId);
+      if (e.returning) return { kind: side(e.seat), text: `${whose(e.seat)}${name(e.defId)}從流放中回到${LANE_NAMES[e.lane ?? 0]}` };
+      if (def.type === 'unit') return { kind: side(e.seat), text: `${whose(e.seat)}預約的${name(e.defId)}在${LANE_NAMES[e.lane ?? 0]}進場` };
+      return { kind: side(e.seat), text: `${whose(e.seat)}預約的${name(e.defId)}發動` };
+    }
+    case 'exile':
+      return { kind: side(e.seat), text: `${whose(e.seat)}${name(e.defId)}被流放出${LANE_NAMES[e.lane]}，下回合才會回來` };
+    case 'claimSecond':
+      return { kind: 'big', text: `${who(e.seat)}扭轉了星軌：下回合${who(e.seat)}後揭曉` };
     case 'combat':
       return { kind: 'combat', text: '⚔ 交戰' };
     case 'unitDamage':
