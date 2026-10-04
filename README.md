@@ -28,6 +28,7 @@ npm run dev      # 開發伺服器，打開終端機顯示的網址
 npm test         # 單元測試 + AI 對 AI 模擬
 npm run sim      # 平衡報告，預設 1000 局：npm run sim -- 3000
 npm run build    # 輸出到 dist/，可以直接放上任何靜態網站
+npm run check:layout  # 版面穩定檢查：放法術、焚卷時版面不能跳動（需要本機有 Chrome，或用 CHROME_PATH 指定）
 ```
 
 推送到 `main` 時，GitHub Actions 會自動跑測試、建置，並部署到 GitHub Pages（見 [.github/workflows/deploy.yml](.github/workflows/deploy.yml)）。
@@ -63,6 +64,7 @@ src/
     └── styles.css
 tests/               Vitest 測試
 scripts/sim.ts       平衡報告
+scripts/check-layout.ts  用無頭 Chrome 檢查版面不跳動（沒放進 CI，因為需要瀏覽器）
 ```
 
 ## 設計重點

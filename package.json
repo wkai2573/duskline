@@ -9,7 +9,8 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "sim": "node scripts/sim.ts"
+    "sim": "node scripts/sim.ts",
+    "check:layout": "node scripts/check-layout.ts"
   },
   "devDependencies": {
     "@types/node": "26.6.3",
