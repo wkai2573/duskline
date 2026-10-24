@@ -4,7 +4,7 @@
 雙方同時把牌蓋在三條戰線上，揭曉後自動交戰，先摧毀對手兩座塔的一方獲勝。
 可以對戰電腦，也可以和朋友連線對戰。目前有三個陣營：晨曦騎士團、暮影盟約、星軌學會（預約、流放、揭曉順序）。
 
-**線上試玩：<https://wkai2573.github.io/duskline/>**
+**線上試玩：<https://hub.ouo1.workers.dev/duskline/>**
 
 ## 和朋友連線
 
@@ -32,7 +32,7 @@ npm run card-power -- orbit   # 逐張牌強度分析：把某種卡換成同費
 npm run check:layout  # 版面穩定檢查：放法術、焚卷時版面不能跳動（需要本機有 Chrome，或用 CHROME_PATH 指定）
 ```
 
-推送到 `main` 時，GitHub Actions 會自動跑測試、建置，並部署到 GitHub Pages（見 [.github/workflows/deploy.yml](.github/workflows/deploy.yml)）。
+推送到 `main` 時，GitHub Actions 會自動跑測試、建置，並部署至 Hub Worker 子路徑（見 [.github/workflows/deploy.yml](.github/workflows/deploy.yml)）。
 
 ## 專案結構
 
